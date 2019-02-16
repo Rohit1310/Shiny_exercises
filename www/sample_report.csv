@@ -1,0 +1,17 @@
+priority,area,u_resolve_code
+3 - Medium,Error Message,Job/Service Restart
+4 - Low,App Installation Error,Process/Workflow Restart
+2 - High,Login Failure,Process/Workflow Restart
+2 - High,Interface Error,Process/Workflow Restart
+4 - Low,Configuration Error,Solved without intervention
+3 - Medium,Slow/Performance Degradation,Solved without intervention
+2 - High,Feature/ Functionality Missing,Job/Service Restart
+5 - Low/Planning,Feature/ Functionality Missing,Solved without intervention
+3 - Medium,Login Failure,Job/Service Restart
+3 - Medium,Login Failure,Solved without intervention
+5 - Low/Planning,Login Failure,Solved without intervention
+3 - Medium,Error Message,Process/Workflow Restart
+3 - Medium,Network Issue,Solved without intervention
+3 - Medium,Error Message,Network Configuration
+3 - Medium,Error Message,Process/Workflow Restart
+3 - Medium,System Down,Process/Workflow Restart
