@@ -2,7 +2,7 @@ library(shiny)
 library(shinyjs)
 library(shinydashboard)
 library(ggplot2)
-library(curl)
+library(httr)
 library(XML)
 library(HistData)
 data(GaltonFamilies)
@@ -10,7 +10,70 @@ library(dplyr)
 
 function(input, output) {
   
+
+## Dynamic Menu:
+  
+  
+  gettabval <- reactive({input$tabNums})
+  
+  tabdt <- reactiveValues(data = NULL)
+  
+  ## menu item 1
+  output$menuitem1 <- renderMenu({
+    if(gettabval() %in% c(1,2,3,4,5)){
+      menuItem("Data Distribution", tabName = "Tab-1", icon = icon("th"))
+    }
+  })
+  
+  
+  ## menu item 2
+  
+  output$menuitem2 <- renderMenu({
+    if(gettabval() %in% c(2,3,4,5)){
+    menuItem("Ploting with a Report", tabName = "Tab-2", icon = icon("th"))
+    }
+  })
+  
+  ## menu item 3
+  
+  output$menuitem3 <- renderMenu({
+    if(gettabval() %in% c(3,4,5)){
+      menuItem("Table Row Selection", tabName = "Tab-3", icon = icon("th"))
+    }
+  })
+  
+  ## menu item 4
+  
+  output$menuitem4 <- renderMenu({
+    if(gettabval() %in% c(4,5)){
+      menuItem("Child Height Prediction", tabName = "Tab-4", icon = icon("th"))
+    }
+  })
+  
+  ## menu item 5
+  
+  output$menuitem5 <- renderMenu({
+    if(gettabval() %in% c(5)){
+      menuItem("HTTP WebPage Content", tabName = "Tab-5", icon = icon("th"))
+    }
+  })
+  
+## welcome:
+  
+  observeEvent(input$jsButton,
+               js$test()
+               )
+  
+  
 ## Tab 1 function:
+  
+  observe(
+    shinyjs::hide("db"),
+    shinyjs::hide("hb")
+  )
+  
+  
+  
   d <- reactiveValues(data = NULL) # used to update the data used using the reactivity
   
   getDistType <- reactive({input$rdtab1})
@@ -38,29 +101,43 @@ function(input, output) {
     }
   })
   
-  observeEvent(input$actionButtab1,
+  observeEvent(input$actionButtab1,{
                
                output$m1 <- renderText({
                  paste("Mean:",round(mean(d$data),2),"(Approximated to 2 decimal places)")
                })
+               shinyjs::show("db")
+  }
                )
   
-  observeEvent(input$actionButtab1.2,
+  observeEvent(input$actionButtab1.2,{
                
                output$m1 <- renderText({
                  paste("Standard Deviation:", round(sd(d$data),2),"(Approximated to 2 decimal places)")
                })
+               shinyjs::show("db")
+  }
   )
   
-  observeEvent(input$helptab1,
+  observeEvent(input$helptab1,{
                output$m1 <- renderText({
                  paste("Help  Content can be give here...\n due to time constrain i am not including the content")
                })
+               shinyjs::show("db")
+  }
     
   )
   
+  observeEvent(input$reset,{
+               shinyjs::hide("db")}
+               )
+  
   
   ## Tab 2 Functions:
+  
+  observe(
+    shinyjs::hide(selector = "#downloadPlot")
+  )
   
   getinputdata <- reactive({
     infile <- input$reportTab2
@@ -98,6 +175,8 @@ function(input, output) {
       ggsave("myplot.png")  # saves the last plot.
       ggsave("myplot.png", plot=prPlot)
       
+      shinyjs::show(selector = "#downloadPlot")
+      shinyjs::show(selector = "#resetTab2")
       
     }else if(getreportfor() == "ar"){
       
@@ -118,6 +197,9 @@ function(input, output) {
       ggsave("myplot.png")  # saves the last plot.
       ggsave("myplot.png", plot=arPlot)
       
+      shinyjs::show(selector = "#downloadPlot")
+      shinyjs::show(selector = "#resetTab2")
+      
     }else if(getreportfor() == "re"){
       
       rePlot <- ggplot(getinputdata(),aes(u_resolve_code, fill = priority))+
@@ -136,6 +218,10 @@ function(input, output) {
       
       ggsave("myplot.png")  # saves the last plot.
       ggsave("myplot.png", plot=rePlot)
+      
+      shinyjs::show(selector = "#downloadPlot")
+      shinyjs::show(selector = "#resetTab2")
+      
     }
     
     output$downloadPlot <- downloadHandler(
@@ -147,16 +233,25 @@ function(input, output) {
       contentType = "image/png"
     )
     
-    observeEvent(input$helptab2,
+    observeEvent(input$helptab2,{
                  output$m2 <- renderText({
                    paste("Mandatory Columns in Report: area,priority,u_resolve_code")
                  })
+                 shinyjs::show("hb")
+    }
                  )
+    
+    observeEvent(input$resetTab2,{
+      shinyjs::hide(selector = "#resetTab2")
+      reset("reportTab2")
+    })
     
     
   })
   
   ## Tab 3:
+  
+  td <- reactiveValues(data = NULL)
   
   getinputdatatab3 <- reactive({
     infile <- input$reportTab3
@@ -169,17 +264,15 @@ function(input, output) {
     }
   })
   
-  output$tableTab3 <- renderDT(getinputdatatab3(),options = list(
-    initComplete = JS("function(settings, json) {",
-      "var rows = $(this.api().table().rows());",
-      "for (var i = 0; i < rows.length; i++){ ",
-      "var row = rows[i];",
-      "row.css({'background-color': '#000', 'color': '#f00'})",
-      "}",
-      "}"),selection = 1
-  )
-  )
   
+  output$tableTab3 <- DT::renderDataTable(getinputdatatab3(),selection = 'single')
+  
+  output$progressBox <- renderInfoBox({
+    infoBox(
+      "Selected Row", value = getinputdatatab3()[input$tableTab3_rows_selected, ], icon = icon("list"),
+      color = "purple"
+    )
+  })
   
   ## Tab 4
   
@@ -245,25 +338,40 @@ function(input, output) {
   ## TAb 5
   
   get.input.url <- reactive({input$url})
-  
-  
-  
+  get.input.contentType <- reactive({input$checktab5})
   
   output$webPage <- renderPrint({
-    url <- get.input.url()
-    dt <- readHTMLList(url)
-    sapply(dt,print)
+    
+    if( "lc"  %in% get.input.contentType()){
+      url <- get.input.url()
+      dt <- readHTMLList(url)
+      sapply(dt,print)
+    }else{
+      paste("Please select the checkBox")
+    }
+    
   })
   
   output$webPage2 <- renderTable({
-    url <- get.input.url()
-    dt <- readHTMLTable(url)
+    if("tc"  %in% get.input.contentType()){
+      url <- get.input.url()
+      dt <- readHTMLTable(url)
+    }else{
+      dt <- c("Please select the checkBox")
+    }
+    
   })
   
+  
   output$rawWebpage <- renderText({
-    url <- get.input.url()
-    con <- GET(url)
-    webpage <- content(con,"text")
+    if("rc"  %in% get.input.contentType()){
+      url <- get.input.url()
+      con <- GET(url)
+      webpage <- content(con,"text")
+    }else{
+      paste("Please select the checkBox")
+    }
+    
   })
   
   
